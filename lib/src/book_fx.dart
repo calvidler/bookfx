@@ -41,7 +41,7 @@ class BookFx extends StatefulWidget {
 
   final bool isNextPageTouchEnabled;
 
-  final Function(bool isDragging)? onDragging;
+  final Function(bool isDragging)? onPageChanging;
 
   const BookFx({
     Key? key,
@@ -55,7 +55,7 @@ class BookFx extends StatefulWidget {
     this.lastCallBack,
     required this.controller,
     this.isNextPageTouchEnabled = true,
-    this.onDragging,
+    this.onPageChanging,
   }) : super(key: key);
 
   @override
@@ -91,13 +91,13 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
         duration: widget.duration ?? const Duration(milliseconds: 800));
     _controller?.addListener(() {
       if (isNext) {
-        /// 翻页
+        /// turn page
         _p.value = PaperPoint(
             Point(currentA.x - (currentA.x + size.width) * _controller!.value,
                 currentA.y + (size.height - currentA.y) * _controller!.value),
             size);
       } else {
-        /// 不翻页 回到原始位置
+        // No Page turn. Back to original position
         _p.value = PaperPoint(
             Point(
               currentA.x + (size.width - currentA.x) * _controller!.value,
@@ -117,7 +117,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
             widget.nextCallBack?.call(widget.controller.currentIndex + 1);
           });
         }
-        widget.onDragging?.call(false);
+        widget.onPageChanging?.call(false);
       }
       if (status == AnimationStatus.dismissed) {
         //起点停止
@@ -257,7 +257,8 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     _controller?.forward(
       from: 0,
     );
-    widget.onDragging?.call(true);
+    // either going next or remaining in the same page
+    if (isNext) widget.onPageChanging?.call(true);
   }
 
   @override
@@ -308,11 +309,13 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
                     clipper: isAlPath ? null : CurrentPaperClipPath(_p, isNext),
                   ),
 
-                  CustomPaint(
-                    size: size,
-                    painter: _BookPainter(
-                      _p,
-                      widget.currentBgColor,
+                  IgnorePointer(
+                    child: CustomPaint(
+                      size: size,
+                      painter: _BookPainter(
+                        _p,
+                        widget.currentBgColor,
+                      ),
                     ),
                   ),
                 ],
@@ -328,6 +331,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   }
 
   void last() {
+    // Going back to previous page
     setState(() {
       isAlPath = false;
       isAnimation = true;
@@ -338,10 +342,11 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
         from: 0,
       );
     });
-    widget.onDragging?.call(true);
+    widget.onPageChanging?.call(true);
   }
 
   void next() {
+    // controller called next page!!!
     setState(() {
       isAlPath = false;
     });
@@ -351,7 +356,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     _controller?.forward(
       from: 0,
     );
-    widget.onDragging?.call(true);
+    widget.onPageChanging?.call(true);
   }
 }
 
