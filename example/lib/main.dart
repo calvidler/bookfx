@@ -1,5 +1,5 @@
-import 'package:example/demo/book.dart';
-import 'package:example/demo/custom_widget.dart';
+import 'demo/book.dart';
+import 'demo/custom_widget.dart';
 import 'package:flutter/material.dart';
 
 void main() {

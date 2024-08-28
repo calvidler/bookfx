@@ -8,8 +8,4 @@ class EBookController extends ChangeNotifier {
     this.fontSize = fontSize;
     notifyListeners();
   }
-
-
-
-  
 }
