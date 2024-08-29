@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'book_controller.dart';
 
@@ -14,6 +15,8 @@ class BookFx extends StatefulWidget {
 
   /// 书籍区域
   final Size size;
+
+  final Size screenSize;
 
   /// 一般情况页面布局是固定的 变化的是布局当中的内容
   /// 不过若是页面之间有布局不同时，须同时更新布局
@@ -47,6 +50,7 @@ class BookFx extends StatefulWidget {
     Key? key,
     this.duration,
     required this.size,
+    required this.screenSize,
     required this.currentPage,
     required this.nextPage,
     this.currentBgColor,
@@ -169,35 +173,36 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     });
   }
 
-  void gestureOnPanDown(d) {
-    downPos = d.localPosition;
+  void gesturingBack(Offset move) {
+    double minDxMove = size.width / 4;
+    double dx = move.dx - downPos.dx;
+    if (dx > minDxMove) {
+      isPrevious = true;
+    } else {
+      isPrevious = false;
+    }
   }
 
-  void gestureOnPanUpdate(d, {customMove = null}) {
-    if (isAnimation) {
-      return;
-    }
-    if (widget.controller.currentIndex == widget.pageCount - 1) {
-      return;
-    }
-
-    var move = customMove ?? d.localPosition;
-
-    if (downPos.dx > size.width / 2 && !widget.isNextPageTouchEnabled) {
+  void gestureingNext(Offset move) {
+    if (!widget.isNextPageTouchEnabled) {
       // Cannot swipe to next page
       return;
     }
 
-    // 临界值取消更新
-    if (move.dx >= size.width ||
-        move.dx < 0 ||
-        move.dy >= size.height ||
-        move.dy < 0) {
-      return;
+    if (isSwipeFromCorner) {
+      double dx = move.dx - downPos.dx + size.width;
+      double dy = move.dy - downPos.dy + size.height;
+      move = Offset(dx, dy);
     }
-    if (downPos.dx < size.width / 2) {
-      return;
-    }
+
+    // allowing from nicer overflow swiping
+    double moveDx = max(min(move.dx, size.width - 1), 0);
+    double moveDy = max(min(move.dy, size.height - 1), 0);
+    print("move $move vs $size");
+
+    print("moveDx $moveDx, moveDy $moveDy");
+
+    move = Offset(moveDx, moveDy);
 
     if (isAlPath == true) {
       setState(() {
@@ -218,26 +223,61 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     // currentA = Point(move.dx, size.height - 1);
     // _p.value = PaperPoint(Point(move.dx, size.height - 1), size);
 
-    if ((size.width - move.dx) / size.width > 1 / 3) {
+    if ((size.width - move.dx) / size.width > 1 / 4) {
       isNext = true;
     } else {
       isNext = false;
     }
   }
 
-  void gestureOnPanEnd(d) {
+  void gestureOnPanDown(DragDownDetails d) {
+    downPos = d.localPosition;
+  }
+
+  void gestureOnPanUpdate(DragUpdateDetails d) {
     if (isAnimation) {
       return;
     }
-    if (downPos.dx > size.width / 2 && !widget.isNextPageTouchEnabled) {
-      // Cannot swipe to next page
+    if (widget.controller.currentIndex == widget.pageCount - 1) {
+      return;
+    }
+
+    Offset move = d.localPosition;
+
+    // 临界值取消更新
+    if (move.dx >= widget.screenSize.width ||
+        move.dx < 0 ||
+        move.dy >= widget.screenSize.height ||
+        move.dy < 0) {
+      return;
+    }
+
+    if (downPos.dx < widget.screenSize.width / 2) {
+      gesturingBack(move);
+      return;
+    }
+
+    // if (downPos.dx < size.width / 2) {
+
+    // }
+
+    gestureingNext(move);
+  }
+
+  void gestureOnPanEnd(_) {
+    if (isAnimation) {
       return;
     }
 
     /// 手指首次触摸屏幕左侧区域
     if (downPos.dx < size.width / 2) {
       if (widget.controller.currentIndex == 0) {
+        // attempting previous page call but already at first page. send message to user
         widget.lastCallBack?.call(widget.controller.currentIndex);
+        return;
+      }
+      if (!isPrevious) {
+        // did not swipe enough to go back to previous page
         return;
       }
       widget.lastCallBack?.call(widget.controller.currentIndex);
@@ -245,8 +285,14 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
       return;
     }
 
+    if (!widget.isNextPageTouchEnabled) {
+      // swiping to next page is disabled by user
+      return;
+    }
+
     ///下一页
     if (widget.controller.currentIndex == widget.pageCount - 1) {
+      // attempting next page call but already at last page. send message to user
       widget.nextCallBack?.call(widget.pageCount);
       return;
     }
@@ -270,6 +316,8 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   bool isNext = true; // 是否翻页到下一页
   bool isAlPath = true; //
   bool isAnimation = false; // 是否正在执行翻页
+  bool isSwipeFromCorner = true;
+  bool isPrevious = false;
   // 控制点类
   final ValueNotifier<PaperPoint> _p =
       ValueNotifier(PaperPoint(const Point(0, 0), const Size(0, 0)));
@@ -277,17 +325,12 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height,
+      width: widget.screenSize.width,
+      height: widget.screenSize.height,
       child: GestureDetector(
+        // can only be bigger than the size
         onPanDown: gestureOnPanDown,
-        onPanUpdate: (d) {
-          final extraWidth = MediaQuery.of(context).size.width - size.width;
-          final extraHeight = MediaQuery.of(context).size.height - size.height;
-          Offset custom_move = Offset(max(d.localPosition.dx - extraWidth, 0),
-              max(d.localPosition.dy - extraHeight, 0));
-          gestureOnPanUpdate(d, customMove: custom_move);
-        },
+        onPanUpdate: gestureOnPanUpdate,
         onPanEnd: gestureOnPanEnd,
         behavior: HitTestBehavior.opaque,
         child: Align(
@@ -296,6 +339,9 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
             width: size.width,
             height: size.height,
             child: GestureDetector(
+              onPanDown: gestureOnPanDown,
+              onPanUpdate: gestureOnPanUpdate,
+              onPanEnd: gestureOnPanEnd,
               behavior: HitTestBehavior.opaque,
               child: Stack(
                 children: [
@@ -320,9 +366,6 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
                   ),
                 ],
               ),
-              onPanDown: gestureOnPanDown,
-              onPanUpdate: gestureOnPanUpdate,
-              onPanEnd: gestureOnPanEnd,
             ),
           ),
         ),
@@ -338,6 +381,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
       currentA = Point(-200, size.height - 100);
       widget.controller.currentIndex--;
       isNext = false;
+      isPrevious = true;
       _controller?.forward(
         from: 0,
       );
@@ -352,6 +396,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     });
     isAnimation = true;
     isNext = true;
+    isPrevious = false;
     currentA = Point(size.width - 50, size.height - 50);
     _controller?.forward(
       from: 0,
