@@ -198,9 +198,6 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     // allowing from nicer overflow swiping
     double moveDx = max(min(move.dx, size.width - 1), 0);
     double moveDy = max(min(move.dy, size.height - 1), 0);
-    print("move $move vs $size");
-
-    print("moveDx $moveDx, moveDy $moveDy");
 
     move = Offset(moveDx, moveDy);
 
@@ -525,8 +522,6 @@ class _BookPainter extends CustomPainter {
           pyy1.quadraticBezierTo(p.value.e.x - m1, p.value.e.y - n1,
               p.value.b.x - m1, p.value.b.y - n1);
 
-          // pyy1.lineTo(twoPoint.x, twoPoint.y);
-
           pyy1.lineTo(p.value.p.x, p.value.p.y);
           pyy1.lineTo(p.value.k.x, p.value.k.y);
           pyy1.lineTo(p.value.f.x, p.value.f.y);
@@ -534,10 +529,6 @@ class _BookPainter extends CustomPainter {
 
           double mE1 = (p.value.a.x - p.value.p2.x);
           double nE1 = (p.value.a.y - p.value.p2.y); // 负数
-          // debugPrint("p1x = $m1");
-          // debugPrint("p1y = $n1");
-          // debugPrint("p2x = $mE1");
-          // debugPrint("p2y = $nE1");
 
           var twoPoint = PaperPoint.toTwoPoint(
               Point(p.value.b.x - m1, p.value.b.y - n1),
@@ -547,8 +538,7 @@ class _BookPainter extends CustomPainter {
           pyy2.moveTo(p.value.j.x, (p.value.j.y - nE1));
           pyy2.quadraticBezierTo(p.value.i.x - mE1, p.value.i.y - nE1,
               p.value.k.x - mE1, p.value.k.y - nE1);
-          // pyy2.lineTo(twoPoint.x, twoPoint.y);
-          // pyy2.lineTo(p.value.a.x, p.value.a.y);
+
           pyy2.lineTo(p.value.p2.x, p.value.p2.y);
           pyy2.lineTo(p.value.b.x, p.value.b.y);
           pyy2.lineTo(p.value.f.x, p.value.f.y);
