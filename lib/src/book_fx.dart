@@ -182,7 +182,6 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   void gesturingBack(Offset move) {
     if (widget.gesturingBack != null) {
       widget.gesturingBack?.call(move);
-      return;
     }
     double minDxMove = size.width / 4;
     double dx = move.dx - downPos.dx;
@@ -196,7 +195,6 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   void gestureingNext(Offset move) {
     if (widget.gesturingNext != null) {
       widget.gesturingNext?.call(move);
-      return;
     }
     if (!widget.isNextPageTouchEnabled) {
       // Cannot swipe to next page
