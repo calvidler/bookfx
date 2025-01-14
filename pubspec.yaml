@@ -1,5 +1,5 @@
 name: bookfx
-description: 一个Flutter模拟的书籍翻页效果
+description: A Flutter package for a book page-turning effect
 version: 0.0.2
 homepage: https://github.com/lixp185/bookfx
 repository: https://github.com/lixp185/bookfx
@@ -22,4 +22,3 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
-
