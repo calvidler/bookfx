@@ -46,6 +46,10 @@ class BookFx extends StatefulWidget {
 
   final Function(bool isDragging)? onPageChanging;
 
+  final Function(Offset move)? gesturingNext;
+
+  final Function(Offset move)? gesturingBack;
+
   const BookFx({
     Key? key,
     this.duration,
@@ -60,6 +64,8 @@ class BookFx extends StatefulWidget {
     required this.controller,
     this.isNextPageTouchEnabled = true,
     this.onPageChanging,
+    this.gesturingNext,
+    this.gesturingBack,
   }) : super(key: key);
 
   @override
@@ -174,6 +180,10 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   }
 
   void gesturingBack(Offset move) {
+    if (widget.gesturingBack != null) {
+      widget.gesturingBack?.call(move);
+      return;
+    }
     double minDxMove = size.width / 4;
     double dx = move.dx - downPos.dx;
     if (dx > minDxMove) {
@@ -184,6 +194,10 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   }
 
   void gestureingNext(Offset move) {
+    if (widget.gesturingNext != null) {
+      widget.gesturingNext?.call(move);
+      return;
+    }
     if (!widget.isNextPageTouchEnabled) {
       // Cannot swipe to next page
       return;
