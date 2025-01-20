@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 class BookController extends ChangeNotifier {
   int nextType = 0;
-  int currentIndex = 0; // 当前页
-  int goToIndex = 0; // 跳转页
+  int currentIndex;
+  int goToIndex = 0;
+
+  BookController({this.currentIndex = 0});
 
   /// 上一页
   last() {
