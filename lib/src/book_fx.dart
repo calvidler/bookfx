@@ -241,6 +241,9 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
 
   void gestureOnPanDown(DragDownDetails d) {
     downPos = d.localPosition;
+    // stopping tap down to cause page turn if previously occured, when no update occurs
+    isNext = false;
+    isPrevious = false;
   }
 
   void gestureOnPanUpdate(DragUpdateDetails d) {
@@ -322,7 +325,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  bool isNext = true; // 是否翻页到下一页
+  bool isNext = false; // 是否翻页到下一页
   bool isAlPath = true; //
   bool isAnimation = false; // 是否正在执行翻页
   bool isSwipeFromCorner = true;
