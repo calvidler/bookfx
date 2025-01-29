@@ -44,6 +44,8 @@ class BookFx extends StatefulWidget {
 
   final bool isNextPageTouchEnabled;
 
+  final bool isBackPageTouchEnabled;
+
   final Function(bool isDragging)? onPageChanging;
 
   final Function(Offset move)? gesturingNext;
@@ -63,6 +65,7 @@ class BookFx extends StatefulWidget {
     this.lastCallBack,
     required this.controller,
     this.isNextPageTouchEnabled = true,
+    this.isBackPageTouchEnabled = true,
     this.onPageChanging,
     this.gesturingNext,
     this.gesturingBack,
@@ -183,6 +186,11 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     if (widget.gesturingBack != null) {
       widget.gesturingBack?.call(move);
     }
+
+    if (!widget.isBackPageTouchEnabled) {
+      // Cannot swipe to previous page
+      return;
+    }
     double minDxMove = size.width / 4;
     double dx = move.dx - downPos.dx;
     if (dx > minDxMove) {
@@ -239,14 +247,16 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     }
   }
 
-  void gestureOnPanDown(DragDownDetails d) {
+  void gestureOnPanDown(DragStartDetails d) {
     downPos = d.localPosition;
     // stopping tap down to cause page turn if previously occured, when no update occurs
     isNext = false;
     isPrevious = false;
+    updateOccured = false;
   }
 
   void gestureOnPanUpdate(DragUpdateDetails d) {
+    updateOccured = true;
     if (isAnimation) {
       return;
     }
@@ -277,12 +287,16 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   }
 
   void gestureOnPanEnd(_) {
-    if (isAnimation) {
+    if (isAnimation || !updateOccured) {
       return;
     }
 
     /// 手指首次触摸屏幕左侧区域
     if (downPos.dx < size.width / 2) {
+      if (!widget.isBackPageTouchEnabled) {
+        // Cannot swipe to previous page
+        return;
+      }
       if (widget.controller.currentIndex == 0) {
         // attempting previous page call but already at first page. send message to user
         widget.lastCallBack?.call(widget.controller.currentIndex);
@@ -325,6 +339,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  bool updateOccured = false; // to prevent tap down to cause page turn
   bool isNext = false; // 是否翻页到下一页
   bool isAlPath = true; //
   bool isAnimation = false; // 是否正在执行翻页
@@ -341,43 +356,37 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
       height: widget.screenSize.height,
       child: GestureDetector(
         // can only be bigger than the size
-        onPanDown: gestureOnPanDown,
+        onPanStart: gestureOnPanDown,
         onPanUpdate: gestureOnPanUpdate,
         onPanEnd: gestureOnPanEnd,
-        behavior: HitTestBehavior.opaque,
+        behavior: HitTestBehavior.translucent,
         child: Align(
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: size.width,
             height: size.height,
-            child: GestureDetector(
-              onPanDown: gestureOnPanDown,
-              onPanUpdate: gestureOnPanUpdate,
-              onPanEnd: gestureOnPanEnd,
-              behavior: HitTestBehavior.opaque,
-              child: Stack(
-                children: [
-                  widget.controller.currentIndex == widget.pageCount - 1
-                      ? const SizedBox()
-                      // 下一页
-                      : widget.nextPage(widget.controller.currentIndex + 1),
-                  // // 当前页
-                  ClipPath(
-                    child: widget.currentPage(widget.controller.currentIndex),
-                    clipper: isAlPath ? null : CurrentPaperClipPath(_p, isNext),
-                  ),
+            child: Stack(
+              children: [
+                widget.controller.currentIndex == widget.pageCount - 1
+                    ? const SizedBox()
+                    // 下一页
+                    : widget.nextPage(widget.controller.currentIndex + 1),
+                // // 当前页
+                ClipPath(
+                  child: widget.currentPage(widget.controller.currentIndex),
+                  clipper: isAlPath ? null : CurrentPaperClipPath(_p, isNext),
+                ),
 
-                  IgnorePointer(
-                    child: CustomPaint(
-                      size: size,
-                      painter: _BookPainter(
-                        _p,
-                        widget.currentBgColor,
-                      ),
+                IgnorePointer(
+                  child: CustomPaint(
+                    size: size,
+                    painter: _BookPainter(
+                      _p,
+                      widget.currentBgColor,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
