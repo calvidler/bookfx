@@ -35,10 +35,10 @@ class BookFx extends StatefulWidget {
   final int pageCount;
 
   /// 下一页回调
-  final Function(int index)? nextCallBack;
+  final Function(int index, bool wasDragged)? nextCallBack;
 
   /// 上一页回调
-  final Function(int index)? lastCallBack;
+  final Function(int index, bool wasDragged)? lastCallBack;
 
   final BookController controller;
 
@@ -127,9 +127,11 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
           setState(() {
             isAlPath = true;
             widget.controller.currentIndex++;
-            widget.nextCallBack?.call(widget.controller.currentIndex + 1);
+            widget.nextCallBack
+                ?.call(widget.controller.currentIndex + 1, draggedAction);
           });
         } else {}
+        draggedAction = true;
         widget.onPageChanging?.call(false);
       }
       if (status == AnimationStatus.dismissed) {
@@ -153,18 +155,20 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
         /// 当前页currentIndex是角标索引 0开始 页码是从 1开始的
         if (widget.controller.currentIndex >= widget.pageCount - 1) {
           //最后一页了
-          widget.nextCallBack?.call(widget.pageCount);
+          widget.nextCallBack?.call(widget.pageCount, false);
           return;
         }
+        draggedAction = false;
         next();
       } else if (widget.controller.nextType == -1) {
         /// 上一页
         if (widget.controller.currentIndex != 0) {
+          draggedAction = false;
           last();
           return;
         } else {
           // 首页了
-          widget.lastCallBack?.call(widget.controller.currentIndex);
+          widget.lastCallBack?.call(widget.controller.currentIndex, false);
         }
       } else if (widget.controller.nextType == 0) {
         // 跳页
@@ -302,14 +306,14 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
       }
       if (widget.controller.currentIndex == 0) {
         // attempting previous page call but already at first page. send message to user
-        widget.lastCallBack?.call(widget.controller.currentIndex);
+        widget.lastCallBack?.call(widget.controller.currentIndex, false);
         return;
       }
       if (!isPrevious) {
         // did not swipe enough to go back to previous page
         return;
       }
-      widget.lastCallBack?.call(widget.controller.currentIndex);
+      widget.lastCallBack?.call(widget.controller.currentIndex, true);
       last();
       return;
     }
@@ -322,7 +326,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
     ///下一页
     if (widget.controller.currentIndex == widget.pageCount - 1) {
       // attempting next page call but already at last page. send message to user
-      widget.nextCallBack?.call(widget.pageCount);
+      widget.nextCallBack?.call(widget.pageCount, false);
       return;
     }
     setState(() {
@@ -348,6 +352,7 @@ class _BookFxState extends State<BookFx> with SingleTickerProviderStateMixin {
   bool isAnimation = false; // 是否正在执行翻页
   bool isSwipeFromCorner = true;
   bool isPrevious = false;
+  bool draggedAction = true;
   // 控制点类
   final ValueNotifier<PaperPoint> _p =
       ValueNotifier(PaperPoint(const Point(0, 0), const Size(0, 0)));
